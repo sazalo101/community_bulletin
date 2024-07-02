@@ -3,12 +3,15 @@ name = "community_bulletin_backend"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
 crate-type = ["cdylib"]
 
+[[bin]]
+name = "community_bulletin_backend"
+path = "src/lib.rs"
+
 [dependencies]
-candid = "0.10"
-ic-cdk = "0.12"
-ic-cdk-timers = "0.6" # Feel free to remove this dependency if you don't need timers
+candid = "0.8.4"
+ic-cdk = "0.7.0"
+ic-cdk-macros = "0.6.0"
+serde = "1.0.152"
