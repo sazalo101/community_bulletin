@@ -32,13 +32,30 @@ thread_local! {
     static STATE: RefCell<BulletinBoardState> = RefCell::new(BulletinBoardState::default());
 }
 
+/// Initialize the canister and set up the initial state and welcome post.
+
 #[init]
 fn init() {
-    ic_cdk::println!("Canister initialized");
+    ic_cdk::println!("Canister initialized at timestamp: {}", time());
+    STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        // Example: Initialize with a welcome post
+        let welcome_post = Post {
+            id: state.post_counter,
+            author: ic_cdk::caller(),
+            title: "Welcome".to_string(),
+            content: "Welcome to the bulletin board!".to_string(),
+            category: Category::Announcement,
+            timestamp: time(),
+        };
+        state.posts.insert(state.post_counter, welcome_post);
+        state.post_counter += 1;
+    });
+    ic_cdk::println!("Initial state setup complete.");
 }
 
 #[update]
-fn create_post(title: String, content: String, category: Category) -> u64 {
+fn create_post(title: String, content: String, category: Category) -> Result<u64, String> {
     STATE.with(|state| {
         let mut state = state.borrow_mut();
         let post_id = state.post_counter;
@@ -54,8 +71,8 @@ fn create_post(title: String, content: String, category: Category) -> u64 {
         };
 
         state.posts.insert(post_id, post);
-        post_id
-    })
+        Ok(post_id)
+    }).map_err(|e| format!("Failed to create post: {}", e))
 }
 
 #[query]
@@ -104,6 +121,25 @@ fn update_post(id: u64, title: Option<String>, content: Option<String>, category
             Err("Post not found".to_string())
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_post() {
+        let title = "Test Post".to_string();
+        let content = "This is a test post.".to_string();
+        let category = Category::Announcement;
+
+        let post_id = create_post(title.clone(), content.clone(), category.clone()).unwrap();
+        let post = get_post(post_id).unwrap();
+
+        assert_eq!(post.title, title);
+        assert_eq!(post.content, content);
+        assert_eq!(post.category, category);
+    }
 }
 
 #[update]
